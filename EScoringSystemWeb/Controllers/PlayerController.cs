@@ -17,14 +17,14 @@ namespace EScoringSystemWeb.Controllers
             var Hong = new Player();
             Hong.Name = "Hong";
             Hong.Score = 0;
-            Hong.Id = 1;
-            Hong.Penalties= 2;
+            Hong.Id = 0;
+            Hong.Penalties= 0;
 
             var Chong = new Player();
             Chong.Name = "Chong";
             Chong.Score = 0;
-            Chong.Id = 2;
-            Chong.Penalties = 1;
+            Chong.Id = 0;
+            Chong.Penalties = 0;
 
             players.Add(Hong);
             players.Add(Chong);
