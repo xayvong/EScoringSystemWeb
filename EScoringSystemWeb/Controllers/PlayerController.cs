@@ -9,28 +9,55 @@ namespace EScoringSystemWeb.Controllers
     [Route("[controller]")]
     public class PlayerController : Controller
     {
-        List<Player> players= new List<Player>();
+        List<Player> players = new();
+
+        Player Hong = new(1,"Hong",0,0);       
+
+        Player Chong = new(2, "Chong", 0, 0);
 
         [HttpGet(Name = "Player")]
         public IEnumerable<Player> Get()
         {
-            var Hong = new Player();
-            Hong.Name = "Hong";
-            Hong.Score = 0;
-            Hong.Id = 0;
-            Hong.Penalties= 0;
-
-            var Chong = new Player();
-            Chong.Name = "Chong";
-            Chong.Score = 0;
-            Chong.Id = 0;
-            Chong.Penalties = 0;
 
             players.Add(Hong);
             players.Add(Chong);
 
             return players.ToArray();
-            
+
         }
+
+        [HttpGet("HongPunch")]
+        public Player HongPunchPoint()
+        {
+            Hong.Score += 1;
+
+            return Hong;
+        }
+
+        [HttpGet("ChongPunch")]
+        public Player ChongPunchPoint()
+        {
+            Chong.Score += 1;
+
+            return Chong;
+        }
+
+        [HttpGet("HongBodyKick")]
+        public Player HongKickPoint()
+        {
+            Hong.Score += 2;
+
+            return Hong;
+        }
+
+        [HttpGet("ChongBodyKick")]
+        public Player ChongKickPoint()
+        {
+            Chong.Score += 2;
+
+            return Chong;
+        }
+
+
     }
 }
