@@ -2,65 +2,86 @@
 using WebApplication1.Controllers;
 using WebApplication1;
 using EScoringSystemWeb.Models;
-
+using Newtonsoft.Json.Linq;
+using System.Security.Cryptography.X509Certificates;
+using System.Data.SqlClient;
+using Dapper;
 
 namespace EScoringSystemWeb.Controllers
 {
 
     [ApiController]
     [Route("[controller]")]
-    public class PlayerController : Controller
+    public class PlayerController : ControllerBase
     {
-    
-        [HttpGet("GetPoints")]
-        public void GetPoints()
-        {
-            
-            var Json = "{\"Hong\" :\"" + Player.Hong.Score + "\",\"Chong\" :\"" + Player.Chong.Score + "\"}";
-            Response.Clear();
-            Response.WriteAsync(Json);
-            
 
+        private readonly IConfiguration _config;
+        public Player Hong;
+        public Player Chong;
+
+
+        public PlayerController(IConfiguration config) 
+        { 
+            _config = config; 
+        
+        }
+
+        [HttpGet("GetPoints")]
+        public async Task<ActionResult<List<Player>>> GetPoints()
+        {
+
+            //var Json = "{\"Hong\" :\"" + StaticPlayer.Hong.Score + "\",\"Chong\" :\"" + StaticPlayer.Chong.Score + "\"}";
+            //Response.Clear();
+            //Response.WriteAsync(Json);
+
+            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+            var players = await connection.QueryAsync<Player>("select * from Player");
+            return Ok(players); 
+                
         }
 
 
 
         [HttpPost("AddPoints")]
+        
         public void UpdatePoints(int id, int points)
         {
+
             if (id == 1)
-            {            
-                
-                Player.Hong.Score += points;
+            {
+
+                Hong.Score += points;
             }
             else if (id == 2)
             {
-                Player.Chong.Score += points;
+                Chong.Score += points;
             }
-            
+
+
+
         }
 
         [HttpPost("ResetRound")]
         public int ResetRound ()
         {
-            if (Player.Hong.Score > Player.Chong.Score) 
+            if (Hong.Score > Chong.Score) 
             {
-                Player.Hong.MatchPoint += 1;
+                Hong.MatchPoint += 1;
                     
             }
             else
             {
-                Player.Chong.MatchPoint += 1;
+                Chong.MatchPoint += 1;
             }
-            if (Player.Hong.MatchPoint == 2)
+            if (Hong.MatchPoint == 2)
             {
                 Reset();
-                return Player.Hong.Id;
+                return Hong.Id;
             }
-            else if (Player.Chong.MatchPoint == 2)
+            else if (Chong.MatchPoint == 2)
             {
                 Reset();
-                return Player.Chong.Id;
+                return Chong.Id;
             }   
             else
             {
@@ -71,8 +92,11 @@ namespace EScoringSystemWeb.Controllers
         [HttpPost("Reset")]
         public void Reset()
         {
-            Player.Hong = new(1, "Hong", 0, 0);
-            Player.Chong = new(2, "Chong", 0, 0);
+            Hong.Score = 0;
+            Hong.Penalties = 0;
+
+            Chong.Score = 0;
+            Chong.Penalties = 0;
 
         }
 
