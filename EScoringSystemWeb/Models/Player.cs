@@ -3,7 +3,7 @@
     public class Player
     {
 
-        //Contructor for Player
+        ////Contructor for Player
         //public Player(int id, string name, int penalties, int score)
         //{
         //    Id = id;
