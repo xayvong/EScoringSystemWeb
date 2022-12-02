@@ -48,6 +48,16 @@ namespace EScoringSystemWeb.Controllers
             return Ok(players);
 
         }
+        [HttpGet("GetScore")]
+        public async Task<int> GetScore(int id)
+        {
+
+
+            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+            int Score = await connection.QuerySingleOrDefaultAsync<short>("select Score from Player where id = @Id" , new { Id = id });
+            return Score;
+
+        }
 
 
         [HttpPost("AddPoints")]
@@ -156,10 +166,10 @@ namespace EScoringSystemWeb.Controllers
             //await conn.ExecuteAsync("Select Score from Player where id = @Id ", new { Id = 1 });
             Player Hong = new();
             Player Chong = new();
-            Hong = await conn.QuerySingleAsync<Player>("select * from Player where id = @Id", new { Id = 1 });
-            Chong = await conn.QuerySingleAsync<Player>("select * from Player where id = @Id", new { Id = 2 });
+            int HongScore = await conn.QuerySingleOrDefaultAsync<short>("select Score from Player where id = @Id", new { Id = 1 });
+            int ChongScore = await conn.QuerySingleOrDefaultAsync<short>("select Score from Player where id = @Id", new { Id = 2 });
 
-            if (Hong.Score > Chong.Score) 
+            if (HongScore > ChongScore) 
             {
                 Reset();
 
@@ -176,27 +186,33 @@ namespace EScoringSystemWeb.Controllers
                 using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
                 await connection.ExecuteAsync("update Player set MatchPoint = MatchPoint + 1 where id = @Id ", new { Id = 2 });
             }
-            if (Hong.MatchPoint == 2)
+                //Matchpoint
+                int HongMatchPoint = await conn.QuerySingleOrDefaultAsync<short>("select MatchPoint from Player where id = @Id", new { Id = 1 });
+                int ChongMatchPoint = await conn.QuerySingleOrDefaultAsync<short>("select MatchPoint from Player where id = @Id", new { Id = 2 });
+
+            if (HongMatchPoint == 2)
             {
                 Reset();
                 //Hong.MatchPoint = 0;
                 using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-                var players = await connection.ExecuteAsync("update Player set MatchPoint = 0 where id = 1");
+                await connection.ExecuteAsync("update Player set MatchPoint = 0 where id = 1");
+                var player = await connection.QueryFirstOrDefaultAsync<Player>("select * from Player where id = 1");
 
-                return Hong;
+                return player;
                 //using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
                 //var players = await connection.QueryFirstAsync<Player>("select * from Player where id = 1");
                 //return players ;
 
             }
-            else if (Chong.MatchPoint == 2)
+            else if (ChongMatchPoint == 2)
             {
                 Reset();
                 //Chong.MatchPoint = 0;
                 using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-                var players = await connection.ExecuteAsync("update Player set MatchPoint = 0 where id = 2");
+                await connection.ExecuteAsync("update Player set MatchPoint = 0 where id = 2");
+                var player = await connection.QueryFirstOrDefaultAsync<Player>("select * from Player where id = 2");
 
-                return Chong;
+                return player;
                 //using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
                 //var players = await connection.QueryFirstAsync<Player>("select * from Player where id = 2");
                 //return players;
