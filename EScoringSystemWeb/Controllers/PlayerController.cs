@@ -21,6 +21,10 @@ namespace EScoringSystemWeb.Controllers
         //public static Player Hong = new(1, "Hong", 0, 0);
         //public static Player Chong = new(2, "Chong", 0, 0);
 
+        public static DateTime MatchStart = DateTime.MinValue;
+        public static int MatchDuration = 0;
+        public static DateTime PauseTime = DateTime.MinValue;
+        public static bool IsPaused = false;
 
         public PlayerController(IConfiguration config)
         {
@@ -48,6 +52,38 @@ namespace EScoringSystemWeb.Controllers
             return Ok(players);
 
         }
+
+
+        [HttpGet("UpdateScoreBoard")]
+        public async Task<string> GetScoreBoard()
+        {
+            string Json = "";
+            var json = new JObject();
+            var hong = new JObject();
+            var chong = new JObject();
+
+            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+            var players = await connection.QueryAsync<Player>("select * from Player");
+            var plist = players.ToList();
+            hong.Add(new JProperty("Score", plist[0].Score));
+            hong.Add(new JProperty("Penalties", plist[0].Penalties));
+            hong.Add(new JProperty("MatchPoint", plist[0].MatchPoint));
+
+            chong.Add(new JProperty("Score", plist[1].Score));
+            chong.Add(new JProperty("Penalties", plist[1].Penalties));
+            chong.Add(new JProperty("MatchPoint", plist[1].MatchPoint));
+
+            json.Add("hong", hong);
+            json.Add("chong", chong);
+
+            json.Add("TimerPaused", IsPaused);
+            json.Add("PauseTime", PauseTime.ToString());
+            json.Add("TimeStart", MatchStart.ToString());
+            json.Add("TimeDuration", MatchDuration.ToString());
+            return json.ToString();
+
+        }
+
         [HttpGet("GetScore")]
         public async Task<int> GetScore(int id)
         {
@@ -82,6 +118,27 @@ namespace EScoringSystemWeb.Controllers
 
 
         }
+
+        [HttpPost("StartMatch")]
+
+        public void StartMatch(DateTime matchStart, int minutes)
+        {
+
+            MatchStart = matchStart;
+            MatchDuration = minutes;
+
+        }
+
+        [HttpPost("PauseMatch")]
+
+        public void PauseMatch(DateTime pauseTime, bool isPaused)
+        {
+
+            PauseTime = pauseTime;
+            IsPaused = isPaused;
+
+        }
+
         [HttpPost("RemovePoints")]
 
         public async void RemovePoints(int id, int points)
@@ -231,15 +288,28 @@ namespace EScoringSystemWeb.Controllers
 
             //Hong.Score = 0;
             //Hong.Penalties = 0;
+            MatchStart = DateTime.MinValue;
+            MatchDuration = 0;
+            PauseTime = DateTime.MinValue;
+            IsPaused = false;
 
-
-            await connection.ExecuteAsync("update Player set Penalties = @Clear, Score = @Clear where id = @Id ", new { Id = 1, Clear = 0 });
+        await connection.ExecuteAsync("update Player set Penalties = @Clear, Score = @Clear where id = @Id ", new { Id = 1, Clear = 0 });
 
             //Chong.Score = 0;
             //Chong.Penalties = 0;
             await connection.ExecuteAsync("update Player set Penalties = @Clear, Score = @Clear where id = @Id ", new { Id = 2, Clear = 0 });
             
 
+        }
+
+        [HttpPost("AddMatchPoint")]
+        public async void AddMatchPoint(string player)
+        {
+            var id = (player.ToLower() == "chong" ? 2:1);
+
+            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+
+            await connection.ExecuteAsync("update Player set MatchPoint = @Point where id = @Id ", new { Id = id, Point = 1 });
         }
 
 
