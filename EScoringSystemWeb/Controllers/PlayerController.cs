@@ -21,18 +21,22 @@ namespace EScoringSystemWeb.Controllers
         //public static Player Hong = new(1, "Hong", 0, 0);
         //public static Player Chong = new(2, "Chong", 0, 0);
 
+        //Static properties for the UI side to utilize 
+
         public static DateTime MatchStart = DateTime.MinValue;
         public static int MatchDuration = 0;
         public static DateTime PauseTime = DateTime.MinValue;
         public static bool IsPaused = false;
+        public static bool MatchEnded = false;
 
+        //Connect to the DB via Dapper.
         public PlayerController(IConfiguration config)
         {
             _config = config;
 
         }
 
-
+        //No longer being used. One of my first api attempts to connect to the Unity API that was successful. 
         [HttpGet("GetPoints")]
         public async Task<ActionResult> GetPoints()
         {
@@ -54,6 +58,7 @@ namespace EScoringSystemWeb.Controllers
         }
 
 
+        //Main API call that gets everything from score, to time. 
         [HttpGet("UpdateScoreBoard")]
         public async Task<string> GetScoreBoard()
         {
@@ -80,10 +85,13 @@ namespace EScoringSystemWeb.Controllers
             json.Add("PauseTime", PauseTime.ToString());
             json.Add("TimeStart", MatchStart.ToString());
             json.Add("TimeDuration", MatchDuration.ToString());
+            json.Add("MatchEnded", MatchEnded);
             return json.ToString();
 
         }
 
+
+        //No longer being used. Simple api to test if Dapper could get single digits from a column
         [HttpGet("GetScore")]
         public async Task<int> GetScore(int id)
         {
@@ -95,9 +103,8 @@ namespace EScoringSystemWeb.Controllers
 
         }
 
-
-        [HttpPost("AddPoints")]
-        
+        //Add points to the database from multiple screens from the UI
+        [HttpPost("AddPoints")]      
         public async void UpdatePoints(int id, int points)
         {
 
@@ -119,18 +126,18 @@ namespace EScoringSystemWeb.Controllers
 
         }
 
+        //Api to let the UI know the match has started.
         [HttpPost("StartMatch")]
-
         public void StartMatch(DateTime matchStart, int minutes)
         {
-
+            MatchEnded = false;
             MatchStart = matchStart;
             MatchDuration = minutes;
 
         }
 
+        //Let the UI know if the match is paused or not.
         [HttpPost("PauseMatch")]
-
         public void PauseMatch(DateTime pauseTime, bool isPaused)
         {
 
@@ -139,8 +146,8 @@ namespace EScoringSystemWeb.Controllers
 
         }
 
+        //Remove points from score
         [HttpPost("RemovePoints")]
-
         public async void RemovePoints(int id, int points)
         {
 
@@ -163,8 +170,9 @@ namespace EScoringSystemWeb.Controllers
 
 
         }
-        [HttpPost("AddPenalties")]
 
+        //API to add penalties and update score.
+        [HttpPost("AddPenalties")]
         public async void AddPenalties(int id, int penalties)
         {
 
@@ -189,8 +197,9 @@ namespace EScoringSystemWeb.Controllers
 
 
         }
-        [HttpPost("RemovePenalties")]
 
+        //API to remove penalties for a player and updates score.
+        [HttpPost("RemovePenalties")]      
         public async void RemovePenalties(int id, int penalties)
         {
 
@@ -216,6 +225,7 @@ namespace EScoringSystemWeb.Controllers
 
         }
 
+        //Not being used. API that was originally going to be used to determine match point. Decided it would be easier to do it manually. 
         [HttpPost("ResetRound")]
         public async Task<Player> ResetRound()
         {
@@ -281,6 +291,8 @@ namespace EScoringSystemWeb.Controllers
 
 
         }
+
+        //API that resets scores in the database for both players.
         [HttpPost("Reset")]
         public async void Reset()
         {
@@ -293,15 +305,16 @@ namespace EScoringSystemWeb.Controllers
             PauseTime = DateTime.MinValue;
             IsPaused = false;
 
-        await connection.ExecuteAsync("update Player set Penalties = @Clear, Score = @Clear where id = @Id ", new { Id = 1, Clear = 0 });
+            await connection.ExecuteAsync("update Player set Penalties = @Clear, Score = @Clear , MatchPoint = @Clear", new { Id = 1, Clear = 0 });
 
             //Chong.Score = 0;
             //Chong.Penalties = 0;
-            await connection.ExecuteAsync("update Player set Penalties = @Clear, Score = @Clear where id = @Id ", new { Id = 2, Clear = 0 });
+
             
 
         }
 
+        //API to add match point after a winner has been declared. 
         [HttpPost("AddMatchPoint")]
         public async void AddMatchPoint(string player)
         {
@@ -310,6 +323,11 @@ namespace EScoringSystemWeb.Controllers
             using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
 
             await connection.ExecuteAsync("update Player set MatchPoint = @Point where id = @Id ", new { Id = id, Point = 1 });
+
+            await connection.ExecuteAsync("update Player set Penalties = @Clear, Score = @Clear", new { Clear = 0 });
+
+
+            MatchEnded = true;
         }
 
 
