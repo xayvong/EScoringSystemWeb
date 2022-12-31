@@ -24,10 +24,13 @@ namespace EScoringSystemWeb.Controllers
         //Static properties for the UI side to utilize 
 
         public static DateTime MatchStart = DateTime.MinValue;
-        public static int MatchDuration = 0;
+        public static float MatchDuration = 0;
         public static DateTime PauseTime = DateTime.MinValue;
-        public static bool IsPaused = false;
+        public static bool IsPaused = true;
         public static bool MatchEnded = false;
+        public static string LastWinner = "";
+        public static string ChongName = "Chong";
+        public static string HongName = "Hong";
 
         //Connect to the DB via Dapper.
         public PlayerController(IConfiguration config)
@@ -73,6 +76,7 @@ namespace EScoringSystemWeb.Controllers
             hong.Add(new JProperty("Score", plist[0].Score));
             hong.Add(new JProperty("Penalties", plist[0].Penalties));
             hong.Add(new JProperty("MatchPoint", plist[0].MatchPoint));
+            hong.Add(new JProperty("Name", plist[0].Name));
 
             chong.Add(new JProperty("Score", plist[1].Score));
             chong.Add(new JProperty("Penalties", plist[1].Penalties));
@@ -81,11 +85,15 @@ namespace EScoringSystemWeb.Controllers
             json.Add("hong", hong);
             json.Add("chong", chong);
 
+            json.Add("ChongName", ChongName);
+            json.Add("HongName", HongName);
+
             json.Add("TimerPaused", IsPaused);
             json.Add("PauseTime", PauseTime.ToString());
             json.Add("TimeStart", MatchStart.ToString());
             json.Add("TimeDuration", MatchDuration.ToString());
             json.Add("MatchEnded", MatchEnded);
+            json.Add("Winner", LastWinner);
             return json.ToString();
 
         }
@@ -128,11 +136,21 @@ namespace EScoringSystemWeb.Controllers
 
         //Api to let the UI know the match has started.
         [HttpPost("StartMatch")]
-        public void StartMatch(DateTime matchStart, int minutes)
+        public void StartMatch(DateTime matchStart, float minutes)
         {
+
+            IsPaused = false;
+            PauseTime = DateTime.MinValue;
             MatchEnded = false;
             MatchStart = matchStart;
             MatchDuration = minutes;
+
+        }
+        //API to make sure MatchEnded is false
+        [HttpPost("MatchEnded")]
+        public void MatchEnd(bool value)
+        {
+            MatchEnded = value;
 
         }
 
@@ -307,10 +325,13 @@ namespace EScoringSystemWeb.Controllers
 
             await connection.ExecuteAsync("update Player set Penalties = @Clear, Score = @Clear , MatchPoint = @Clear", new { Id = 1, Clear = 0 });
 
+            LastWinner = "";
+            ChongName = "Chong";
+            HongName = "Hong";
             //Chong.Score = 0;
             //Chong.Penalties = 0;
 
-            
+
 
         }
 
@@ -322,7 +343,7 @@ namespace EScoringSystemWeb.Controllers
 
             using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
 
-            await connection.ExecuteAsync("update Player set MatchPoint = @Point where id = @Id ", new { Id = id, Point = 1 });
+            await connection.ExecuteAsync("update Player set MatchPoint = MatchPoint + @Point where id = @Id ", new { Id = id, Point = 1 });
 
             await connection.ExecuteAsync("update Player set Penalties = @Clear, Score = @Clear", new { Clear = 0 });
 
@@ -330,7 +351,28 @@ namespace EScoringSystemWeb.Controllers
             MatchEnded = true;
         }
 
+        [HttpPost("SetWinner")]
+        public void SetWinner(string winner)
+        {
+            
+            LastWinner = winner;
+        }
 
+        [HttpPost("SetName")]
+        public void SetName(int id,string name)
+        {
+            //using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+            //await connection.ExecuteAsync("update Player set Name = @Name where id = @Id ", new { Id = id, Name = name });
+            if (id == 1)
+            {
+                ChongName = name;
+            }
+            if (id ==2)
+            {
+                HongName = name;
+            }
+
+        }
 
     }
 }
